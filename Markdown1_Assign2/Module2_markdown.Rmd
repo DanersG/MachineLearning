@@ -1,0 +1,130 @@
+---
+title: "Assignment 2 Example"
+author: "Jason Holland"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+# I call this my "Engine Block" which to me, is the code block that 
+# loads the relevant packages and gets the data that is important to 
+# the report. 
+
+# Example of required package.
+
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org") # We need this for read_csv as well
+# as ggplot2 functions.
+
+# Any other packages?  Use the scheme above
+
+# Example of getting and reading data
+
+# Get the Crickter Data from GitHub
+urlfile <- "https://raw.githubusercontent.com/jholland5/IS4300Project/main/cricket.csv"
+# Read the data into R and name it cricketers.
+cricketers <- read_csv(url(urlfile))
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+hist(mtcars$mpg)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r,echo=FALSE}
+############################# Begin Example of Assignment 2##############
+#########################################################################
+```
+# Example of Assignment 2
+
+## Analyzing the Iris Data
+
+In this report, we provide summary statistics and visualizations for the iris data set that is located within the R base Package. We look at the first 6 rows of the data.
+
+```{r,echo=FALSE}
+head(iris)
+``` 
+
+Next we give summary statistics for the four numerical variables and group the data by species. 
+
+#### Sepal Length
+
+```{r, echo=FALSE}
+
+iris %>% group_by(Species) %>%
+  summarise(Mean=mean(Sepal.Length),
+            Standard_Deviation=sd(Sepal.Length))
+```
+#### Sepal Width
+
+```{r, echo=FALSE}
+
+iris %>% group_by(Species) %>%
+  summarise(Mean=mean(Sepal.Width),
+            Standard_Deviation=sd(Sepal.Width))
+```
+
+#### Petal Length
+
+```{r, echo=FALSE}
+
+iris %>% group_by(Species) %>%
+  summarise(Mean=mean(Petal.Length),
+            Standard_Deviation=sd(Petal.Length))
+```
+#### Petal Width
+
+```{r, echo=FALSE}
+
+iris %>% group_by(Species) %>%
+  summarise(Mean=mean(Petal.Width),
+            Standard_Deviation=sd(Petal.Width))
+```
+
+## Visualizing the Iris Data
+
+We provide three visualizations of the Iris data using the two petal variables; Petal Width and Petal Length. First, we examine box plots separated by the factor variable *Species.* First we look at Petal Length by species.
+
+```{r,echo=FALSE}
+irisPlot1 <- iris %>% ggplot()
+irisPlot1 + geom_boxplot(aes(Petal.Length,fill=Species))+
+  labs(title="Petal Length by Species",x="")
+```
+
+Next we visualize Petal Width by Species.
+
+```{r,echo=FALSE}
+irisPlot1 <- iris %>% ggplot()
+irisPlot1 + geom_boxplot(aes(Petal.Width,fill=Species))+
+  labs(title="Petal Width by Species",x="")
+```
+
+For our final visualization, we examine a scatter plot of the two petal variables colored by *Species* to demonstrate that predicting the species based on petal measurements is a possibility.
+
+```{r, echo=FALSE}
+irisPlot <- iris %>% ggplot()
+irisPlot + geom_point(aes(Petal.Length,Petal.Width,col =
+                            Species),size = 3)+
+  labs(title="Petal Length vs. Petal Width for Iris Plants") +
+  scale_colour_manual(values=c("deeppink","dodgerblue","yellow2"),
+                    labels=c("Setosa","Versicolor","Virginica")) +
+  theme_dark()
+```

@@ -1,0 +1,240 @@
+---
+title: "MNIST Data Set"
+author: "Andres Gomez"
+date: "2023-04-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Install tidyverse package required to run the program for end user
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+
+# Install knitr package required to run the program for end user
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+
+# Install sjstats package require to run the program for end user
+if(!require(sjstats)) install.packages("sjstats", repos = "http://cran.us.r-project.org")
+
+#this is for the plot_grid function to show the scatterplots in part one
+if(!require(cowplot)) install.packages("cowplot", repos = "http://cran.us.r-project.org") 
+
+#Requiring caret packages for functionalities on section 3:
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+
+#requiring tibble to allow the programmer to do code such as -> caret::XYZ
+if(!require(tibble)) install.packages("tibble", repos = "http://cran.us.r-project.org")
+
+# Obtaining the data:
+
+# Retrieve the Heart Disease data from GitHub
+url <- 'https://raw.githubusercontent.com/jholland5/COMP4299/main/mnist_20.csv'
+
+# Read the data into R and name it concrete.
+mnistData <- read_csv(url)
+```
+
+# Final Project: MNIST Data Set
+
+## Introduction - MNIST Data Set Analysis:
+
+The MNIST database of handwritten digits, available from this page, has a training set of 60,000 examples, and a test set of 10,000 examples. It is a subset of a larger set available from NIST. The digits have been size-normalized and centered in a fixed-size image. The data arrangement in the data set can be explained as follows:
+
+* **...1** Represents the row number from the original data set. This variable will be removed further down in the report.
+* **V#** V(Any number from 1-784) represents a numeric value in the matrix. This value goes from 0-255, where 0 means background (white) and 255 means foreground (black). This attempts to represent the shape of a number in a 28x28 matrix.
+* **labels** represent the number that the matrix intends to display.
+
+<br>
+
+The following is a quick representation of what a row looks like in the data through the use of three tables.
+The report will display the sixth row since it contains more data than others. The representation is displayed as follows:
+
+```{r, echo=FALSE}
+#Transforming the data into a data frame:
+mnist_DataFrame <- as.data.frame(mnistData)
+
+#Inserting the first 6 rows of data into a variable:
+table_mnistData <- mnist_DataFrame[6,1:786]
+
+#Displaying the variable on two different tables for organization purposes.
+knitr::kable(table_mnistData[1, 1:205], caption="**MNIST Data Set - Part 1**", align="c")
+knitr::kable(table_mnistData[1, 206:393], caption="**MNIST Data Set - Part 2**", align="c")
+knitr::kable(table_mnistData[1, 394:590], caption="**MNIST Data Set - Part 3**", align="c")
+knitr::kable(table_mnistData[1, 590:786], caption="**MNIST Data Set - Part 4**", align="c")
+
+```
+<br>
+
+Nevertheless, the representation of one row in a horizontal format does not display the data set at its full potential. The report it deems necessary to display the data of **row 6** in a matrix of 28x28 where each number represents a pixel on a 28x28-pixel image. The matrix looks as follows:
+
+<br>
+```{r, echo=FALSE}
+
+#Putting the data into a matrix:
+mnist_AsMatrix <- as.matrix(mnist_DataFrame[6, 2:785])
+mnist_AsMatrix <- matrix(mnist_AsMatrix[1,], nrow = 28, ncol = 28)
+
+#Displaying the matrix as a table for better display:
+knitr::kable(mnist_AsMatrix, caption="**MNIST Data Set - Image of the number 9**", align="c")
+```
+<br>
+
+## Part 2 - Preparing the Data:
+
+To prepare the data for the report the following will be performed:
+  *Remove predictors if the variance of the predictor is below the value of 5.
+  *Remove the first column since it just shows the row number from the original data set.
+  *Add a factor variable with a value of 0 if the number in that row is a zero and 1 if the number in that row is not a zero.
+  
+Notice that the report displays a brief view of the first 6 rows of the data after the preparation in the following description:
+
+<br>
+
+```{r, echo=FALSE}
+
+# Calculate variances of each predictor
+mnist_Var <- apply(mnistData, 2, var)
+
+# Identify predictors with variance below the 5
+VarBFive <- which(mnist_Var < 5)
+
+# Remove low variance predictors from data
+mnist_prep <- mnistData[, -VarBFive]
+
+mnist_prep <- mnist_prep[,-1]
+
+
+#add a factor variable that has value 0 if the number in that row is a zero and 1 if the number in that row is not a zero.
+mnist_prep$isZero <- factor(ifelse(mnistData$labels == 0, 0, 1)) #Inserting 0 if the value is zero, and 1 if otherwise.
+
+head(mnist_prep)
+
+```
+
+```{r, echo=FALSE}
+#Creating the training index by only using 80% of the data.
+train_index <- caret::createDataPartition(mnist_prep$isZero, times = 1, p = 0.8, list = FALSE)
+
+train_set <- mnist_prep[train_index,] 
+test_set <- mnist_prep[-train_index,] 
+```
+
+<br>
+
+## Part 3 - Predicting Model using KNN:
+
+In this Section the model will provide a predictive model that uses only three variables to predict
+whether the number is a zero or not by using a *K-Nearest Neighbors* (KNN) model.
+
+The first part of this section will focus on demonstrating how the PC1, PC2, and PC3 are important when determining whether the matrix contains a zero or any other number after performing a *principal component analysis* (PCA). The report will now prove the importance of PC1 and PC2 through the following graphs:
+
+<br>
+
+```{r, echo=FALSE}
+#Preparing the data to obtain values that are numeric and to avoid the error:  Error in colMeans(x, na.rm = TRUE) : 'x' must be numeric
+#The idea to use sapply comes from the website: https://www.dataquest.io/blog/apply-functions-in-r-sapply-lapply-tapply/#:~:text=The%20sapply()%20function%20is,the%20most%20simplified%20data%20structure.
+
+mnist_withNumVal <- mnist_prep[, sapply(mnist_prep, is.numeric)]
+
+# Create a numeric matrix called: mnistMatrix from mnist_withNumVal assuring that the matrix will only contain numeric columns. This was done to avoid the error: "Error in colMeans(x, na.rm = TRUE) : 'x' must be numeric" that was constantly occurring at the time of making this rmarkdown file.
+mnistMatrix <- as.matrix(mnist_withNumVal[,1:ncol(mnist_withNumVal)-1])
+
+#Performing the PCA for the mnist prep data.
+pca_mnist <- prcomp(mnistMatrix,center=TRUE, scale. = TRUE)
+
+
+#Adding the first two PC values to the data so it is possible to relate it to the Class.
+mnist_plusPCS <- mnist_prep %>% mutate(PC1 = pca_mnist$x[,1],PC2 = pca_mnist$x[,2], PC3 = pca_mnist$x[,3])
+
+#Creating plots to demonstrate how they relate to the class.
+plotB <- mnist_plusPCS %>% ggplot()
+plotB + geom_point(aes(PC1,PC2,col=isZero)) +
+  labs(caption = "PC1 and PC2 in relation to isZero")
+plotC <- mnist_plusPCS %>% ggplot()
+plotC + geom_point(aes(PC1,PC3,col=isZero)) +
+  labs(caption = "PC1 and PC3 in relation to isZero")
+
+```
+<br>
+
+After demonstrating how PC1, PC2, and PC3 are important when predicting whether the 28x28 image contains a number other than zero, the report will now perform a KNN to display PC1, PC2, and PC3 aid in predicting whether the matrix contains a number other than zero. The prediction is demonstrated in a graph and a confusion table as follows:
+
+<br>
+```{r, echo=FALSE}
+mnist_PCvalues <- mnist_prep %>% mutate(PC1 = pca_mnist$x[,1],PC2 = pca_mnist$x[,2],PC3 = pca_mnist$x[,3])
+ifZero <- mnist_prep$isZero
+
+train_setPC <- mnist_PCvalues[train_index,] 
+test_setPC <- mnist_PCvalues[-train_index,] 
+
+#Creating KNN model, the second number has been set to 30 due to processing time conventions:
+fit_knn <- caret::train(isZero ~PC1+PC2+PC3,
+                method = "knn",data=train_setPC,
+                tuneGrid = data.frame(k = seq(1, 20, 7)))
+ggplot(fit_knn)        # best model was achieved at around k=11.
+
+# Prediction, and displaying prediction results with a confusion matrix.
+y_hat_knn <- predict(fit_knn, test_setPC, type = "raw")
+C <- confusionMatrix(y_hat_knn,as.factor(test_setPC$isZero))
+C
+```
+
+<br>
+The following is the F1 Score:
+
+```{r, echo=FALSE}
+F_meas(y_hat_knn, as.factor(test_setPC$isZero))
+```
+
+<br>
+
+Thanks to the confusion table, we are able to understand that the accuracy of the three predictors (PC1, PC2, and PC3) is more than 90% hence why the predictors are of high importance when predicting if the matrix or row has a value other than zero.
+
+<br>
+## Part 4 - Predicting Model using KNN with no variable limit:
+
+In this section, the report will produce a model that predicts whether a number is zero or not with no limitations on variables. The model used will be a KNN with no limit on its variables. Since the report needs to accomplish a time constraint, it was deemed necessary to use a specific amount of variables, in this case 15.
+
+<br>
+
+```{r, echo=FALSE}
+mnist_PCvalues2 <- mnist_prep %>% mutate(PC1 = pca_mnist$x[,1],PC2 = pca_mnist$x[,2],PC3 = pca_mnist$x[,3],
+                                         PC4 = pca_mnist$x[,4],PC5 = pca_mnist$x[,5],PC6 = pca_mnist$x[,6],
+                                         PC7 = pca_mnist$x[,7],PC8 = pca_mnist$x[,8],PC9 = pca_mnist$x[,9],
+                                         PC10 = pca_mnist$x[,10],PC11 = pca_mnist$x[,11],PC12 = pca_mnist$x[,12],
+                                         PC13 = pca_mnist$x[,13],PC14 = pca_mnist$x[,14],PC15 = pca_mnist$x[,15])
+
+train_setPC2 <- mnist_PCvalues2[train_index,] 
+test_setPC2 <- mnist_PCvalues2[-train_index,] 
+
+#Creating KNN model, the second number has been set to 30 due to processing time conventions:
+fit_knn <- caret::train(isZero ~PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10+PC11+PC12+PC13+PC14+PC15,
+                method = "knn",data=train_setPC2,
+                tuneGrid = data.frame(k = seq(1, 10, 7)))
+ggplot(fit_knn)        # best model was achieved at around k=11.
+
+# Prediction, and displaying prediction results with a confusion matrix.
+y_hat_knn <- predict(fit_knn, test_setPC2, type = "raw")
+C <- confusionMatrix(y_hat_knn,as.factor(test_setPC2$isZero))
+C
+```
+<br>
+The following is the F1 Score:
+
+```{r, echo=FALSE}
+F_meas(y_hat_knn, as.factor(test_setPC2$isZero))
+```
+
+<br>
+
+## Part 5 - Conclusion:
+
+The report is able to conclude that the last model was more successful in providing more accuracy regarding whether a number is other than zero through the use of more PC values. It is possible to conclude that the last model used was able to provide more accurate data since it provided around 99% accuracy, as described by the confusion matrix.
+
+Note: At the time the report was made, it only took around 50 seconds to compile.
+
+<br>
+
+### References:
+*http://yann.lecun.com/exdb/mnist/

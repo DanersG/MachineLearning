@@ -1,0 +1,169 @@
+---
+title: "Beans Data Set"
+author: "Andres Gomez"
+date: "2023-04-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Install tidyverse package required to run the program for end user
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+
+# Install knitr package required to run the program for end user
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+
+# Install sjstats package require to run the program for end user
+if(!require(sjstats)) install.packages("sjstats", repos = "http://cran.us.r-project.org")
+
+#this is for the plot_grid function to show the scatterplots in part one
+if(!require(cowplot)) install.packages("cowplot", repos = "http://cran.us.r-project.org") 
+
+#Requiring caret packages for functionalities on section 3:
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+
+#requiring tibble to allow the programmer to do code such as -> caret::XYZ
+if(!require(tibble)) install.packages("tibble", repos = "http://cran.us.r-project.org")
+
+# Obtaining the data:
+
+# Retrieve the Heart Disease data from GitHub
+url <- 'https://raw.githubusercontent.com/jholland5/COMP4299/main/beans.csv'
+
+# Read the data into R and name it concrete.
+beansData <- read_csv(url)
+```
+# R Markdown 6 - Assingment 7: Dried Beans Data Set
+
+## Part 1 - Dried Beans Data Set Analysis
+
+Koklu and Ozkan (2020) describe a data set where images of beans were segmented and quantified. There are 13,611 beans quantified using 16 morphologic image features. The variety of each bean was labeled as one of six values (in the column **class**). There several variables which will be explained as follows:
+
+* **Area** (Area) describes The area of a bean zone and the number of pixels within its boundaries.
+* **Perimeter** Bean circumference is defined as the length of its border.
+* **Major Axis Length** The distance between the ends of the longest line that can be drawn from a bean.
+* **Minor Axis Length** The longest line that can be drawn from the bean while standing perpendicular to the main axis.
+* **Aspect Ratio** Defines the relationship between L and l.
+* **Eccentricity** Eccentricity of the ellipse having the same moments as the region.
+* **Convex Area** Number of pixels in the smallest convex polygon that can contain the area of a bean seed.
+* **Equivalent Diameter** (EquivDiameter) The diameter of a circle having the same area as a bean seed area.
+* **Extent** The ratio of the pixels in the bounding box to the bean area.
+* **Solidity** Also known as convexity. The ratio of the pixels in the convex shell to those found in beans.
+* **Roundness** Calculated with the following formula:  *R* = $\frac{4πA}{p^2}$
+* **Compactness** Measures the roundness of an object: *CO* = $\frac{EquivDiameter}{MajorAxisLength}$
+* **Class** Describes the kind of the beans.
+<br>
+
+The shape features used in the classification of the bean seeds are as follows:
+
+* **ShapeFactor1**: *SF1* = $\frac{MajorAxisLength}{Area}$
+* **ShapeFactor2**: *SF2* = $\frac{MinorAxisLength}{Area}$
+* **ShapeFactor3**: *SF3* = $\frac{Area}{\frac{MajAxisL}{2}*\frac{MajAxisL}{2}*π}$
+* **ShapeFactor4**: *SF4* = $\frac{Area}{\frac{MajAxisL}{2}*\frac{MinorAxisL}{2}*π}$
+
+<br>
+
+The following is a quick summary of the data in a table:
+```{r, echo=FALSE}
+#Note: The first two values are not shown as output.
+#Transforming the data into a data frame:
+beans_DataFrame <- as.data.frame(beansData)
+
+#Inserting the first 6 rows of data into a variable:
+table_beansData <- beans_DataFrame[1:6, 1:8]
+table_beansData2 <- beans_DataFrame[1:6, 9:17]
+
+#Displaying the variable on two different tables for organization purposes.
+knitr::kable(table_beansData, caption="**Dried Beans Data**", align="c")
+knitr::kable(table_beansData2, align="c")
+
+#Seker, Barbunya, Bombay, Cali, Horoz, Sira, Dermason,
+```
+
+<br>
+The following displays a table with the number of observations of each classs of bean recorded in the data set:
+
+```{r, echo=FALSE}
+#Creating a table and displaying it with kable to provide a better format:
+beans_DataFrame <- as.data.frame(beansData)
+beans_Table <- table(beans_DataFrame$Class)
+kable(beans_Table, col.names = c("Class", "Count"))
+```
+
+<br>
+## Part 2 - PCA with Visualization:
+
+In this section, the report will perform a *principal component analysis* (PCA) on the predictors. After visualizing the result, the report will provide further analysis on such results.
+
+```{r, echo=FALSE}
+
+#This statement creates a matrix with all the predictors except the last one which is the class. 
+beansMatrix <- as.matrix(beansData[,1:16])
+
+#Performing the PCA
+pca_beans <- prcomp(beansMatrix,center=TRUE, scale. = TRUE)
+
+#Providing a summary for the PCA:
+summary(pca_beans)
+
+```
+
+The results demonstrate how PC1 *(Area)* and PC2 *(Perimeter)* account for 81.9% of the variation by looking at the *Proportion of Variance*.
+In the following plot we are able to observe how the Area and Perimeter in relation with the *Class* of bean in accordance to the information provided by the PCA:
+
+```{r, echo=FALSE}
+#Adding the first two PC values to the data so it is possible to relate it to the Class.
+beans_plusPCS <- beansData %>% mutate(PC1 = pca_beans$x[,1],PC2 = pca_beans$x[,2])
+
+#Creating plots to demonstrate how they relate to the class.
+plotB <- beans_plusPCS %>% ggplot()
+plotB + geom_point(aes(PC1,PC2,col=Class))
+```
+
+<br>
+
+## Part 3 - Predicting Class:
+
+This section displays a *K-Nearest Neighbors* (KNN) plotted graph and a confusion table, as follows: 
+
+```{r, echo=FALSE}
+#Creating a new frame with the PC values instead of the previous values from the data frame.
+beans_PCvalues <- beans_DataFrame %>% mutate(PC1 = pca_beans$x[,1],PC2 = pca_beans$x[,2],PC3 = pca_beans$x[,3],
+                  PC4 = pca_beans$x[,4],PC5 = pca_beans$x[,5],PC6 = pca_beans$x[,6],
+                  PC7 = pca_beans$x[,7],PC8 = pca_beans$x[,8],PC9 = pca_beans$x[,9],
+                  PC10 = pca_beans$x[,10], PC11 = pca_beans$x[,11], PC12 = pca_beans$x[,12],
+                  PC13 = pca_beans$x[,13], PC14 = pca_beans$x[,14], PC15 = pca_beans$x[,15],
+                  PC16 = pca_beans$x[,16])
+
+#Creating the training index by only using 25% of the data.
+train_index <- caret::createDataPartition(beans_DataFrame$Class, times = 1, p = 0.25, list = FALSE)
+
+train_set <- beans_PCvalues[train_index,] 
+test_set <- beans_PCvalues[-train_index,] 
+
+class <- beans_DataFrame$Class
+
+#Creating KNN model, the second number has been set to 30 due to processing time conventions:
+fit_knn <- caret::train(Class ~ PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10+PC11+PC12+PC13+PC14+PC15+PC16,
+                method = "knn",data=train_set,
+                tuneGrid = data.frame(k = seq(1, 30, 7)))
+ggplot(fit_knn)        # best model was achieved at around k=11.
+
+# Prediction, and displaying prediction results with a confusion matrix.
+y_hat_knn <- predict(fit_knn, test_set, type = "raw")
+C <- confusionMatrix(y_hat_knn,as.factor(test_set$Class))
+C
+```
+<br>
+
+## Part 4 - Conclussion:
+
+The confusion matrix provides a balanced accuracy higher than 90% from the prediction model (KNN). We can conclude that the first two values (*Area* and *Perimeter*) are accurate and contribute as good predictors for the variable *Class*.
+
+<br>
+<br>
+
+## References:
+
+* **Multiclass classification of dry beans using computer vision and machine learning techniques**: https://www.sciencedirect.com/science/article/pii/S0168169919311573?via%3Dihub

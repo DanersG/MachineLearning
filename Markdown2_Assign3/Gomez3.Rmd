@@ -1,0 +1,195 @@
+---
+title: "Concrete Compressive Strength Report"
+author: "Andres Gomez"
+output: html_document
+date: "2023-02-11"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+# Install tidyverse package required to run the program for end user
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+
+# Install knitr package required to run the program for end user
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+
+# Install sjstats package require to run the program for end user
+if(!require(sjstats)) install.packages("sjstats", repos = "http://cran.us.r-project.org")
+
+```
+
+```{r echo=FALSE}
+# Obtaining file from GitHub
+urlfile <- "https://raw.githubusercontent.com/jholland5/COMP4299/main/Concrete_Data.csv"
+
+# Reading the date into R and naming it concrete:
+concrete <- read_csv(url(urlfile), show_col_types = FALSE) # Concrete Data
+concreteData <- as.data.frame(concrete)  # Turning the data into a data frame called concreteData
+```
+
+## Introduction of the Concrete Data Set
+
+Concrete is the most important material in civil engineering. The concrete compressive **strength** is a highly nonlinear function of **age** and ingredients. These ingredients include cement, blast furnace slag, fly ash, water, superplasticizer, coarse aggregate, and fine aggregate.
+
+### Data Description:
+
+
+#### Variables:
+By understanding the data into further detail we can inferred that the two predictors are **age** and **strength**. We also have different variables that describe the different types of ingredients and amounts in a mixture. These variables will be represented as follows:
+
+- **cem** :   Cement
+- **slag**:   Blast Furnace Slag
+- **FA**:     Fly Ash
+- **h2o**:    Water
+- **plast**:    Superplasticizer
+- **cAgg**:   Coarse Aggregate
+- **fAgg**:   Fine Aggregate
+
+
+The following table represents the first 10 rows found in the **Concrete Data Set**:
+
+```{r echo=FALSE}
+# Summarizing concreteData data frame by grouping it into its different types of concretes.
+# We are also using the .groups argument to get rid off a warning message.
+concreteData[1:10,] %>% group_by(Cement = cem, Furnace_Slag = slag, Fly_Ash = FA, Water = h2o, Superplasticizer = plast, CoarsAgg = cAgg, FineAgg = fAgg) %>% summarise(Strength = strength, .groups = 'drop')
+
+```
+
+Note that the data above is grouped by ingredients with the **strength** variable as a result.
+
+
+### Simple Linear Regression (SLR):
+
+#### Pairs plot:
+
+The following graph is known as a pairs plot which will be useful to further understand the data that will be used throughout the report.
+
+```{r echo=FALSE}
+# Populating a pairs plot to further analyze the data:
+pairs(concreteData[1:1030,])
+
+```
+
+
+By analyzing the pairs plot, we are able to understand that the variables **slag**, **FA**, **h2o**, **plast**, **cAgg**, **fAgg**, and **age**, do not contribute in producing adequate variation of the data. Hence, we will be removing the **age** predictor. By removing the **age** predictor we are able to create a Simple Linear Regression (SLR) model with a single predictor, in this case, **cem** as the predictor, and **strength** as the result.
+
+#### Correlation of Ingredients and Strength:
+
+The report will now display the correlation between the **cem** and strength:
+
+```{r echo=FALSE}
+# Obtaining the correlation value betweent the date mentioned:
+cor(concreteData$cem, concreteData$strength)
+```
+
+In addition to that, the following is a plot graph demonstrating the correlation of **cem** and **strength**:
+```{r echo=FALSE}
+# Plotting the correlation described:
+plot(concreteData$cem, concreteData$strength)
+```
+
+This data provides de Simple Linear Regression (SLR) as the following where the last value is the RMSE:
+```{r echo=FALSE}
+# Obtaining the SLR Model:
+concreteModel1 <- lm(strength ~ cem, data=concreteData)
+
+# Displaying a summary:
+summary(concreteModel1)
+
+
+rmse(concreteModel1)
+
+```
+
+
+The following are plots of the strength as function of cement in the data set:
+```{r echo=FALSE}
+plot(concreteModel1)
+
+```
+
+This is a good SLR since it has good p-value that are below 0.5, however it does not possess a good margin error considering that the mean and max are the following:
+```{r echo=FALSE}
+mean(concreteData$strength)
+max(concreteData$strength)
+```
+Taking this results into account, it means that the data set is not able to be represented with a single predictor. In the next section, the report will build a Multiple Linear Regression Model (MLR) to represent the data set in a more accurate measure.
+
+
+### Multiple Linear Regression (MLR) Model:
+
+Previously, we reviewed some variables in the pairs plot, some of those variables will be used for the MLR. The variables selected are: **cem**,**h2o**, **slag**, and **cAgg**.
+
+We now 
+
+```{r echo=FALSE}
+# Obtaining the SLR Model:
+concreteModel2 <- lm(strength ~ cem+h2o+slag+cAgg, data=concreteData)
+
+# Displaying a summary:
+summary(concreteModel1)
+
+
+rmse(concreteModel1)
+
+```
+The previous variables have p-values lower than 0.5 which proves them to be suitable in the correlation of the data.
+ 
+Now, the report displays the **testing** of the data set:
+
+```{r echo=FALSE}
+concData <- concreteData %>% select(cem,h2o,slag,cAgg) 
+
+concPoint <- concreteData %>% ggplot()
+
+# Setting a seed for sampling while utilizing 515 out of the 1030 rows on each the training and testing sets.
+
+set.seed(2022)
+
+testIndex <- sample(1:1030, 515, replace=FALSE)
+concTraining <- concreteData[-testIndex,]
+concTest <- concreteData[testIndex,]
+
+# Piping the data:
+concreteModTest <- concTest %>% ggplot()
+
+concreteModTest + geom_point(aes(cem, strength),col="red") +
+  geom_abline(slope = 0.079580,intercept = 13.442528,col = "darkblue") +
+  labs(title="Linear Model: Strength as function of cement",
+       x = "cem",y="strength")
+```
+
+The report will now present the **training** of the data set:
+
+```{r echo=FALSE}
+concreteModTrain <- concTraining %>% ggplot()
+
+concreteModTrain + geom_point(aes(cem, strength),col="red") +
+  geom_abline(slope = 0.079580,intercept = 13.442528,col = "darkblue") +
+  labs(title="Linear Model: Strength as function of cement",
+       x = "cem",y="strength")
+```
+
+The report will now present the predictions by plotting:
+
+```{r echo=FALSE}
+# Predicting by using the test data:
+predicted_values <- predict(concreteModel2,concTest)
+
+plot(concTest,predicted_values,
+     xlim = c(0,4),ylim = c(0,4))
+abline(a = 0, b =1,col="red")
+```
+
+Now, the report will use a t-test and present its results, as follows:
+
+```{r echo=FALSE}
+t.test(concTest - predicted_values)
+```
+
+#### Conclusion:
+
+With the data presented as before, we can conclude that these values are the best representation of the Concrete Data Set. However, the predictions presented are not guaranteed since their validity is in doubt.

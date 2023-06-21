@@ -1,0 +1,189 @@
+---
+title: "Heart-Disease Directory"
+author: "Andres Gomez"
+date: "2023-03-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Install tidyverse package required to run the program for end user
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+
+# Install knitr package required to run the program for end user
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+
+# Install sjstats package require to run the program for end user
+if(!require(sjstats)) install.packages("sjstats", repos = "http://cran.us.r-project.org")
+
+if(!require(cowplot)) install.packages("cowplot", repos = "http://cran.us.r-project.org") 
+#this is for the plot_grid function to show the scatterplots in part one
+
+# Obtaining the data:
+
+# Retrieve the Heart Disease data from GitHub
+url <- 'https://raw.githubusercontent.com/jholland5/COMP4299/main/heartData.csv'
+
+# Read the data into R and name it concrete.
+heartData <- read_csv(url)
+```
+
+# Heart Disease Database Analysis
+
+## Part 1 - Heart Disease Data Analysis
+
+The data presented in this report contains 303 rows of 10 numeric variables relating to heart disease. The intent of the data in to predict the presence of a heart disease in a patient. Said information is represented with an integer value from 0 (no presence) to 1 (present). The variables are listed below along with the corresponding variable name in parenthesis, and consist of numeric values.
+
+##### Variable names and descriptions
+
+* **Age** (age) describes the age in years.
+* **Sex** (sex) describes the sex of the patient in values of 1 (male) and 0 (female).
+
+* **Resting blood pressure** (sys_press) value of the resting blood pressure in $\frac{mm}{Hg}$ on admission to the hospital.
+
+* **Serum Cholesterol** (chol) value of the serum cholesterol in $\frac{mg}{dl}$.
+
+* **Fasting Blood Sugar** (fast_bsug) fasting blood sugar in terms of: fasting blood sugar > 120 $\frac{mg}{dl}$, whether true (1) or false (0). 
+
+* **Resting electrocardiographic results** (recg) values represent: **0** = Normal, **1** = having ST-T wave abnormality (T wave inversions and/or ST elevation or depression of > 0.05 mV), **2** = showing probable or definite left ventricular hypertrophy by Estes' criteria.
+
+* **Maximum heart rate** (max_hrate) value of maximum heart rate achieved.
+
+* **Old Peak** (opk) ST depression induced by exercise relative to rest.
+
+* **Number of Vessels** (nvess) Number of major vessels in values ranged from 0 to 3.
+
+* **Level** (level) is the value to predict. Values represent absence (0) or presence (1)  of heart disease. This is the attribute to predict.
+
+<br>
+
+## Part 2 - Preparing the Data and Analyzing the Predictors:
+
+##### The following is a glimpse at the first 6 rows of the data
+```{r, echo=FALSE}
+#Note: The first two values are not shown as output.
+#Transforming the data into a data frame:
+heart_DataFrame <- as.data.frame(heartData)
+
+#Inserting the first 6 rows of data into a variable:
+table_heartData <- heart_DataFrame[1:6, 1:10]
+
+#Displaying the variable on a table.
+knitr::kable(table_heartData)
+```
+
+<br>
+
+##### Summary Statistics of the heart disease data:
+
+```{r, echo=FALSE}
+#Inserting a summary of the first three variables into another variable: 
+heartDataSummary1 <- summary(heart_DataFrame[,1:3])
+#running a summary on them and printing it in a table
+knitr::kable(heartDataSummary1)
+
+#Inserting a summary of the second three variables into another variable: 
+heartDataSummary2 <- summary(heart_DataFrame[,4:6])
+#running a summary on them and printing it in a table
+knitr::kable(heartDataSummary2)
+
+#Inserting a summary of the third three variables into another variable: 
+heartDataSummary3 <- summary(heart_DataFrame[,7:9])
+#running a summary on them and printing it in a table
+knitr::kable(heartDataSummary3)
+```
+
+<br>
+
+##### Vizualization of the heart disease data with histograms:
+
+In this subsection, the report will display faceted histogram plots of the different variables in relation with the predictor. The faceted histogram plots are displayed below.
+
+```{r, echo = FALSE}
+#Setting the data into Training and testing set:
+#We are getting rid of the attribute to predict (level), and those values that contain 0 and 1.
+heartTrain <- heartData %>% select(-c(sex, fast_bsug))
+heartTest <- heartData %>% select(-c(sex, fast_bsug))
+
+#Scaling the predictors to remove the bias:
+heartTrain[,1:6] <- as.data.frame(scale(heartTrain[,1:6]), show_col_types = FALSE)
+heartTest[,1:6] <- as.data.frame(scale(heartTest[,1:6]), show_col_types = FALSE)
+
+#Faceted Histogram:
+heartTrain %>%
+  gather(-level, key = "var", value = "value") %>% 
+  ggplot(aes(x = value, color = "blue")) +
+  geom_histogram(bins=18,color = "black",fill = "blue") +
+  facet_wrap(~ var, scales = "free") + 
+  labs(title = "Distributions of Predictors") + 
+  theme(axis.title.x=element_blank(),axis.title.y = element_blank())
+```
+
+The report will now procede to determine the best single predictor.
+
+<br>
+
+## Part 3 - Visualizing a Logistic Model with One Predictor:
+
+##### Determining the best predictor:
+
+The following visualizations illustrate two predictors at the same time to prove whether they separate the response variable well, or not.
+
+```{r, echo=FALSE}
+splot <- heartTrain %>% ggplot() 
+splot + geom_point(aes(max_hrate,sys_press,col = as.factor(level))) +
+  stat_ellipse(aes(max_hrate,sys_press,col=as.factor(level)),
+               type = "norm",lwd =1.5,level = .7) +
+  scale_color_manual(values = c("red", "blue")) +
+  labs(col = "1 = level", title = "Maximum Heart Rate (max_hrate) vs Resting Blood Pressure (sys_press)") 
+```
+
+By looking at the graphs, the report can determine that the possible best predictors were **max_hrate** and **sys_press**, however, it is possible to observe that **max_hrate** separates the levels of heart disease absent (0) or present (1). 
+
+The report will present another perspective by using **age** instead of **sys_press**.
+
+```{r, echo=FALSE}
+splot <- heartTrain %>% ggplot() 
+splot + geom_point(aes(max_hrate,age,col = as.factor(level))) +
+  stat_ellipse(aes(max_hrate,age,col=as.factor(level)),
+               type = "norm",lwd =1.5,level = .7) +
+  scale_color_manual(values = c("red", "blue")) +
+  labs(col = "1 = level", title = "Maximum Heart Rate (max_hrate) vs Resting Blood Pressure (sys_press)") 
+```
+
+Once again, it is possible to observe the importance of **max_hrate**.
+
+<br>
+
+##### Logistic Model with One Predictor:
+
+The report will now display a visualization of the results accompanied by the intercept and predictor.
+```{r, echo=FALSE}
+#Producing logistics Model
+glm_fit <- heartTrain %>% 
+  glm(level ~ max_hrate,data =.,family = "binomial") # Logistic model
+p_hat_glm <- predict(glm_fit,heartTest, type = "response") # probabilities
+y_hat_glm <- factor(ifelse(p_hat_glm > .5,1,0),levels = c("0","1")) #0-1
+
+glm_fit$coefficients
+
+t <- heartTest$max_hrate      # inputs to the model predictions
+y <- 1/(1+exp(-0.1622701)*exp(-0.9946601*t))   # probabilities
+heartTest$Predictor <- as.factor(ifelse(heartTest$level == 1,"Present","Absent")) # Labels
+heartTest$y <- y
+vis <- heartTest %>% ggplot()
+vis + geom_jitter(aes(max_hrate,y,col=Predictor),size = 3,width = .01,height = .02) +
+  geom_abline(slope = 0, intercept = .5,col = "red") +
+  scale_color_manual(values = c("Blue", "Red")) +
+  labs(title = "Visualizing Logistic Regression with One Predictor",
+       subtitle = "Accuracy is 24/32 = .75")
+
+T <- table(heartTest$level,y_hat_glm)
+T
+```
+<br>
+
+## Conclusion:
+
+It is possible to now understand that the **max_hrate** variable may not be enough to understand whether a heart disease is present or absent due to several misclassifications that can be observed in the previous Logistics Model.

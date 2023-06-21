@@ -1,0 +1,63 @@
+---
+title: "Markdown 5 - spamData"
+author: "Andres Gomez"
+date: "2023-04-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Install tidyverse package required to run the program for end user
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+
+# Install knitr package required to run the program for end user
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+
+# Install sjstats package require to run the program for end user
+if(!require(sjstats)) install.packages("sjstats", repos = "http://cran.us.r-project.org")
+
+if(!require(cowplot)) install.packages("cowplot", repos = "http://cran.us.r-project.org") 
+#this is for the plot_grid function to show the scatterplots in part one
+
+# Obtaining the data:
+
+# Retrieve the Heart Disease data from GitHub
+url <- 'https://raw.githubusercontent.com/jholland5/COMP4299/main/spamData.csv'
+
+# Read the data into R and name it concrete.
+spamData <- read_csv(url)
+```
+
+# R Markdown 5 - Assingment 6: Spambase Data Set
+
+## Part 1 - Spam Data Set Analysis
+
+The last column of 'spambase.data' denotes whether the e-mail was considered spam (1) or not (0), i.e. unsolicited commercial e-mail. Most of the attributes indicate whether a particular word or character was frequently occurring in the e-mail. The run-length attributes (55-57) measure the length of sequences of consecutive capital letters. For the statistical measures of each attribute, see the end of this file. The definitions of the attributes are described as follows:
+
+##### Variable names and descriptions
+|**Attribute Type**|**NumAttributes**|**Classification**|**Description**|
+|------------------|-----------------|------------------|---------------|
+| word_freq_WORD   |        48       |continuous real [0,100]| percentage of words in the                                           e-mail that match WORD, i.e. 100 * (number of times the                                       WORD appears in the e-mail) / total number of words in                                        e-mail. A "word" in this case is any string of                                                alphanumeric characters bounded by non-alphanumeric                                           characters or end-of-string.|
+|char_freq_CHAR| 6 | continuous real [0,100] |  percentage of characters in the e-mail that                                                   match CHAR, i.e. 100 * (number of CHAR                                                        occurences) / total characters in e-mail|
+|capital_run_length_average| 1 | continuous integer [1,...] |  average length of uninterrupted                                                               sequences of capital letters|
+|capital_run_length_longest| 1 | continuous integer [1,...] |  length of longest uninterrupted                                                               sequence of capital letters|
+|capital_run_length_total| 1 | continuous integer [1,...] |   sum of length of uninterrupted                                                                sequences of capital letters =                                                                total number of capital letters                                                               in the e-mail|
+|spam| 1 | nominal {0,1} | denotes whether the e-mail was considered spam (1) or not (0), i.e. unsolicited commercial e-mail.|
+
+<br>
+
+
+```{r cars}
+summary(cars)
+```
+
+## Part 2 - Preparing the Data and Analyzing the Predictors:
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

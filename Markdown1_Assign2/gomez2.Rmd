@@ -1,0 +1,162 @@
+---
+title: "gomez2"
+author: "Andres Gomez"
+date: "2023-01-23"
+output:
+  html_document: default
+    
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+##Installing packages needed for the file:
+
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org") # We need this for read_csv as well
+if(!require(dslabs)) install.packages("dslabs")
+```
+
+## I. Introduction of the Data Set
+
+### Breast Cancer Wisconsin Diagnostic Dataset from UCI Machine Learning Repository
+
+In this report, we provide summary statistics and visualizations for the brca data set that is located within the R base Package. The brca data set represents biopsy features for the classification between malignant (M) and benign (B) of breast masses. It includes data for the mean, standard error (se), and worst value of 10 nuclear measurements. 
+
+The following sample presents the first 6 rows of the predictors (x) along with its outcomes (y). Said outcomes are divided into benign (B) and malignant (M):
+
+#### Data from X ():
+This data contains variables such as radius, texture, perimeter, area, smoothness, compactness, concavity, number of concave portions (concave_pts), symmetry, and the fractal dimension of the nucleus (fractal_dim):
+
+
+```{r, echo=FALSE}
+#Pumping the data set brca into the variable Br
+Br <- as.data.frame(brca)
+
+#Pumping some selected data into the variable summX to provide a sample of the data found in the brca:
+summX <- Br %>% select(x.radius_mean, x.texture_mean, x.perimeter_mean, x.area_mean, x.smoothness_mean, x.compactness_mean, x.concavity_mean, x.concave_pts_mean, x.symmetry_mean, x.fractal_dim_mean)
+
+#Presenting the first six rows of the columns selected:
+head(summX)
+```
+Note that the previous summary only presents the mean of the 10 nuclear measurements as a sample of the data that the user may encounter in the brca data set.
+
+
+
+#### Data from y:
+
+The y data, inside the brca data set, contains the outcomes. It contains whether the mass is malignant (M) or benign (B). The following are the first 6 items inside y.
+
+```{r, echo=FALSE}
+#Presenting first 6 rows of the data found in y:
+head(Br$y)
+```
+
+## II. Descriptive Statistics and Visualizations for Predictors:
+
+In this section, the report will provide statistics of two variables considered to better contribute in predicting whether a tumor is benign or malignant, the variables for radius and compactness.
+
+The following are histograms and density graphs displaying data for the variables previously mentioned in the report. We will look at the worst values, mean, and standard error for both of the values.
+
+
+### Histograms & Statistics:
+
+#### Worst Values:
+
+* Radius Worst Value:
+
+```{r, echo=FALSE}
+
+BrSumm <- Br %>% select(x.radius_worst, x.compactness_worst, x.radius_mean, x.compactness_mean, x.radius_se, x.compactness_se, y)
+
+brcaPlot1 <- BrSumm %>% ggplot()
+
+brcaPlot1 + geom_histogram(aes(x.radius_worst), binwidth = 1) +
+  labs(title="Radius worst Values in Breast Masses", x="Radius Worst Values")
+
+brcaPlot1 + geom_density(aes(x.radius_worst), alpha = .5) +
+  labs(title = "Radius worst values in Breas Masses", x="Radius Worst Values")
+```
+
+* Compactness Worst Value:
+
+```{r, echo=FALSE}
+brcaPlot1 + geom_histogram(aes(x.compactness_worst), binwidth = 0.1) +
+  labs(title="Compactness worst values in Breast Masses", x="Compactness Worst Values")
+
+brcaPlot1 + geom_density(aes(x.compactness_worst), alpha = .5) +
+  labs(title = "Compactness worst values in Breas Masses", x = "Compactness Worst Values")
+
+```
+
+#### Mean:
+
+* Radius Mean:
+
+```{r, echo=FALSE}
+brcaPlot1 + geom_histogram(aes(x.radius_mean), binwidth = 0.5) +
+  labs(title="Radius mean in Breast Masses", x="Radius Mean")
+
+brcaPlot1 + geom_density(aes(x.radius_mean), alpha = .5) +
+  labs(title = "Radius mean in Breas Masses", x = "Radius Mean")
+```
+
+* Compactness Mean: 
+
+``` {r, echo=FALSE}
+brcaPlot1 + geom_histogram(aes(x.compactness_mean), binwidth = 0.01) +
+  labs(title="Compactness mean in Breast Masses", x="Compactness Mean")
+
+brcaPlot1 + geom_density(aes(x.compactness_mean), alpha = .5) +
+  labs(title = "Compactness mean in Breast Masses", x="Compactness Mean")
+```
+#### Standard Error:
+
+* Radius Mean:
+
+```{r, echo=FALSE}
+brcaPlot1 + geom_histogram(aes(x.radius_se), binwidth = 0.2) +
+  labs(title="Radius standard error in Breast Masses", x="Radius Standard Error")
+
+brcaPlot1 + geom_density(aes(x.radius_se), alpha = .5) +
+  labs(title = "Radius standard error in Breas Masses", x = "Radius Standard Error")
+```
+
+* Compactness Mean: 
+
+``` {r, echo=FALSE}
+brcaPlot1 + geom_histogram(aes(x.compactness_mean), binwidth = 0.01) +
+  labs(title="Compactness standard error in Breast Masses", x="Compactness Standard Error")
+
+brcaPlot1 + geom_density(aes(x.compactness_mean), alpha = .5) +
+  labs(title = "Compactness standard error in Breast Masses", x="Compactness Standard Error")
+```
+
+## III Visualization of Predictors with y
+
+In this section we will present the two variables of radius and compactness separating the data by benign and malignant tumors.
+
+
+### Scatter Plot for Radius:
+
+* Radius Scatter Plot using the Radius Worst Values and Mean:
+
+```{r, echo=FALSE}
+brcaPlot1 + geom_point(aes(x.radius_worst , x.radius_mean,col = as.factor(y)),size = 3) +
+  labs(title = "Radius worst values and mean by classification y(benign or malignant).",x="Radius Worst Values",  y="Radius Mean")
+```
+
+### Scatter Plot for compactness:
+
+* Compactness Scatter Plot using the Compactness Worst Values and Mean:
+
+```{r, echo=FALSE}
+brcaPlot1 + geom_point(aes(x.compactness_worst , x.compactness_mean,col = as.factor(y)),size = 3) +
+  labs(title = "Compactness worst values and mean by classification y(benign or malignant).",x="Compactness Worst Values",  y="Compactness Mean")
+```
+
+## IV Concluding Observations:
+
+We can conclude that there are more cases where the data of the malignant cases reach higher numbers in compactness and radius, hence making these two variables (radius and compactness) predictors that greatly contribute to determine whether a tumor is malignant or benign.
